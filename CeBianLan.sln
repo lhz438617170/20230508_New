@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32319.34
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Algaedetection", "Algaedetection.csproj", "{C861DB63-C7B8-4D12-ACD6-4FDE1E0B339A}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "藻类检测", "..\藻类检测\藻类检测.vdproj", "{D36D8E9F-BBF3-47E6-8AA1-D59424464500}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C861DB63-C7B8-4D12-ACD6-4FDE1E0B339A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C861DB63-C7B8-4D12-ACD6-4FDE1E0B339A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C861DB63-C7B8-4D12-ACD6-4FDE1E0B339A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C861DB63-C7B8-4D12-ACD6-4FDE1E0B339A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D36D8E9F-BBF3-47E6-8AA1-D59424464500}.Debug|Any CPU.ActiveCfg = Debug
+		{D36D8E9F-BBF3-47E6-8AA1-D59424464500}.Release|Any CPU.ActiveCfg = Release
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E8E7A678-58FA-482B-9E50-9BB2599F134C}
+	EndGlobalSection
+EndGlobal
