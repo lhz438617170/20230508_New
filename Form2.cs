@@ -1,12 +1,15 @@
-﻿using NPOI.SS.Formula.Functions;
+﻿using MySql.Data.MySqlClient;
+using NPOI.SS.Formula.Functions;
 using NPOI.Util;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SqlClient;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -18,19 +21,50 @@ using System.Windows.Forms;
 
 namespace CeBianLan
 {
+    
     public partial class Form2 : Form
     {
-        /*string inf = "";
-        [DllImport("user32.dll")]
-        static extern bool SetCursorPos(int X, int Y);*/
-
-
-
-
-
+        private DataTable dataTable;
+        private int pageSize = 10;
+        private int currentPage = 1;
+        private int totalPage;
+        string strConn = "";
         public Form2()
         {
             InitializeComponent();
+            // 创建数据库连接器并打开连接
+/*
+            // 建立数据库连接
+            SqlConnection conn = new SqlConnection("Database = hz_test; Server = localhost; Port = 3306; Password = root; UserID = root");
+            conn.Open();
+
+            // 定义 SQL 查询
+            string query = "SELECT allyls FROM ain";
+
+            // 执行查询
+            SqlCommand cmd = new SqlCommand(query, conn);
+            SqlDataReader reader = cmd.ExecuteReader();
+
+            // 将查询结果添加到表格控件中
+            while (reader.Read())
+            {
+                dataGridView1.Rows.Add(reader[0].ToString());
+            }
+
+            // 关闭数据库连接
+            reader.Close();
+            conn.Close();*/
+            /*dataTable = new DataTable();
+            dataTable.Columns.Add("ID", typeof(int));
+            dataTable.Columns.Add("Name", typeof(string));
+
+            // 添加数据到 DataTable
+            for (int i = 1; i <= 10; i++)
+            {
+                dataTable.Rows.Add(i, $"Name {i}");
+            }*/
+            // 循环读取查询结果并将其添加到 DataTable 对象中
+
             /*textBox1.Text = " 16 06 00 00 30 00 9E ED 16 06 00 01 45 44 E9 8E 16 03 7A 09 47 41 BC E6 66 41 E3 A7 20 3E 13 00 00 00 00 00 00 00 00 A7 20 3E 13 00 00 00 00 00 00 00 00 48 77 3F C3 00 00 00 00 3D 83 44 34 00 00 00 00 00 00 00 00 3D 83 44 34 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 92 1A 45 85 53 82 45 C1 05 9F 44 EF 41 3E 3E 9E 0B 6F 35 52 B8 19 3F 4D 80 00 46 A2 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03 43  ";
 
             inf = textBox1.Text;
@@ -394,6 +428,8 @@ namespace CeBianLan
                 + "|" + formattedNum27.ToString() + "|" + formattedNum28.ToString() + "|" + formattedNum29.ToString();*/
         }
 
+       
+
         private void button1_Click(object sender, EventArgs e)
         {
             serialPort1.Open();
@@ -492,7 +528,80 @@ namespace CeBianLan
         {
             
         }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void Form2_Load(object sender, EventArgs e)
+        {
+
+
+            /* // 计算总页数
+             totalPage = (int)Math.Ceiling((double)dataTable.Rows.Count / pageSize);
+
+             // 显示第一页数据
+             BindData(1);*/
+
+            DateTime startDate = dateTimePicker1.Value;
+            DateTime endDate = dateTimePicker2.Value;
+        }
+        private void BindData(int page)
+        {
+            /*// 根据当前页数计算起始位置和结束位置
+            int start = (page - 1) * pageSize;
+            int end = Math.Min(start + pageSize, dataTable.Rows.Count);
+
+            // 筛选 DataTable 中的数据
+            DataTable filteredTable = dataTable.Clone();
+            for (int i = start; i < end; i++)
+            {
+                filteredTable.ImportRow(dataTable.Rows[i]);
+            }
+
+            // 绑定数据到 DataGridView 控件
+            dataGridView1.DataSource = filteredTable;
+
+            // 更新分页控件
+            label1.Text = $"Page {page} of {totalPage}";
+            button2.Enabled = (page > 1);
+            button3.Enabled = (page < totalPage);
+            currentPage = page;*/
+        }
+        // 更新分页信息
+
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+           
+        }
+
+        private void button2_Click_1(object sender, EventArgs e)
+        {
+            BindData(currentPage - 1);
+        }
+
+        private void bindingNavigatorMoveNextItem_Click(object sender, EventArgs e)
+        {
+            // 更新 DataGridView 控件的显示位置
+           
+        }
+
+        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button3_Click_1(object sender, EventArgs e)
+        {
+            BindData(currentPage + 1);
+        }
     }
 
-    
+
 }

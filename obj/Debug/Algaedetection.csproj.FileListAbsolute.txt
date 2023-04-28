@@ -66,3 +66,4 @@ D:\work\Textservice\CeBianLan\bin\Debug\System.Runtime.CompilerServices.Unsafe.x
 D:\work\Textservice\CeBianLan\bin\Debug\System.Threading.Tasks.Extensions.xml
 D:\work\Textservice\CeBianLan\bin\Debug\System.CodeDom.dll
 D:\work\Textservice\CeBianLan\bin\Debug\System.CodeDom.xml
+D:\work\Textservice\CeBianLan\obj\Debug\CeBianLan.InputBox.resources
