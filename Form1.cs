@@ -8,6 +8,7 @@ using NPOI.SS.Formula.Functions;
 using NPOI.SS.UserModel;
 using NPOI.XWPF.UserModel;
 using OfficeOpenXml;
+using Org.BouncyCastle.Asn1.Mozilla;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -88,7 +89,8 @@ namespace CeBianLan
         private bool AutoFlag = false;
         //获取当前时间
         private System.DateTime Current_time;
-        
+
+        private Settings settings = new Settings();
         //定时器初始化
         //private System.Timers.Timer t = new System.Timers.Timer(1000);
 
@@ -118,7 +120,11 @@ namespace CeBianLan
         private Random randoms = new Random();
         //private System.Windows.Forms.Timer timer;
         private static System.Timers.Timer timer;
-        
+        //电机时间变量
+        private int numericValue;
+        private int defaultValue;
+        private string comNo;
+        bool popupShown = false;
         #endregion
 
 
@@ -148,37 +154,14 @@ namespace CeBianLan
             //panel3.BackColor = Color.FromArgb(220, 220, 220);
             //panel4.BackColor = Color.FromArgb(220, 220, 220);
             panel5.BackColor = Color.FromArgb(220,220,220);
-
+            label214.ForeColor = Color.Red;
             // 设置日期选择器的事件处理程序
             dateTimePicker1.ValueChanged += new EventHandler(dateTimePicker1_ValueChanged);
             dateTimePicker2.ValueChanged += new EventHandler(dateTimePicker2_ValueChanged);
 
             comboBox9.SelectedIndex = 0;
-            /*comboBox9.DataSource = new List<string> { "10000", "20000", "30000" };
-            comboBox9.SelectedIndex = (int)selectedValues;*/
-            /*serialPort1.PortName = "COM7";
-            serialPort1.BaudRate = 19200;
-            serialPort1.Parity = Parity.None;
-            serialPort1.DataBits = 8;
-            serialPort1.StopBits = StopBits.One;
-            serialPort1.Open();
-            
-            byte[] buffer = new byte[] { 0xCC, 0x02, 0x45, 0x00, 0x00, 0xDD, 0xF0, 0x01 };
-            serialPort1.Write(buffer, 0, buffer.Length);*/
 
-            /* // 创建定时器对象
-             timer = new System.Timers.Timer();
-
-             // 设置定时器的时间间隔（以毫秒为单位）
-             timer.Interval = 500;
-
-             // 绑定定时器的Elapsed事件处理方法
-             timer.Elapsed += OnTimerElapsed;
-
-             // 启动定时器
-             timer.Start();*/
-
-
+            int.TryParse(textBox62.Text, out numericValue);
             #region 设置页变量绑定控件
             textBox40.Text = stg.Tb40.ToString();
             textBox41.Text = stg.Tb41.ToString();
@@ -212,40 +195,94 @@ namespace CeBianLan
             textBox61.Text = stg.Tb61.ToString();
             #endregion
 
-            
-            
+            string[] ports = System.IO.Ports.SerialPort.GetPortNames();
+            foreach (string port in ports)
+            {
+                try
+                {
+                    // 关闭串口
+                    if (serialPort1.IsOpen)
+                    {
+                        serialPort1.Close();
+                    }
+
+                    // 打开串口并配置通信参数
+                    serialPort1.PortName = port;
+                    serialPort1.BaudRate = 19200;
+                    serialPort1.Parity = Parity.None;
+                    serialPort1.DataBits = 8;
+                    serialPort1.StopBits = StopBits.One;
+                    serialPort1.Open();
+
+                    // 发送指令并等待一段时间
+                    byte[] buffer = new byte[] { 0xCC, 0x02, 0x45, 0x00, 0x00, 0xDD, 0xF0, 0x01 };
+                    serialPort1.Write(buffer, 0, buffer.Length);
+                    Thread.Sleep(5000);
+
+                    // 检查串口缓冲区是否有数据可读
+                    if (serialPort1.BytesToRead > 0)
+                    {
+
+                        break;
+                    }
+                    comNo = port;
+                    serialPort1.Close();
+
+                }
+                catch (Exception ex)
+                {
+                    ;// 处理异常
+                }
+            }
+
+            try
+            {
+                serialPort1.PortName = comNo;
+                serialPort1.Open();
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("无法连接串口： " + e.Message+"请检查串口线是否接上");
+            }
+            timer = new System.Timers.Timer();
+            timer.Interval = 1000;
+            timer.Elapsed += OnTimerElapsed;
+            timer.Start();
+            /*Console.WriteLine("按任意键停止...");
+            Console.ReadKey();*/
+            if (!serialPort1.IsOpen)
+            {
+                serialPort1.Close();
+            }
+
         }
 
-        
+
 
         //检测串口是否正常连接
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
-          
+            string[] portNames = SerialPort.GetPortNames();
 
-            // 检测串口是否打开
-            if (!serialPort1.IsOpen)
+            //bool isOpen = serialPort.IsOpen;
+            if (portNames.Contains(comNo))
             {
-                // 如果串口未打开，则尝试打开串口
-                try
-                {
-                    serialPort1.Open();
-                    label51.Text = "串口已连接";
-                    label51.ForeColor = Color.Green;
-                    materialButton4.Enabled = true;
-                    materialButton1.Enabled = true;
-                    materialFloatingActionButton1.Enabled = true;
-                    
-                }
-                catch (Exception ex)
-                {
-                    // 如果打开串口失败，则输出异常信息
-                    label51.Text = "串口未连接,请检查串口连接是否正常";
-                    label51.ForeColor = Color.Red;
-                    materialButton4.Enabled = false;
-                    materialButton1.Enabled = false;
-                    materialFloatingActionButton1.Enabled = false;
-                }
+                label51.Text = "串口已打开,正常连接";
+                label51.ForeColor = Color.Green;
+                serialPort1.Open();
+                materialButton4.Enabled = true;
+                materialButton1.Enabled = true;
+                materialFloatingActionButton1.Enabled = true;
+            }
+            else
+            {
+                label51.Text = "串口失去连接,请检查串口是否正常连接";
+                label51.ForeColor = Color.Red;
+                materialButton4.Enabled = false;
+                materialButton1.Enabled = false;
+                materialFloatingActionButton1.Enabled = false;
+
+
             }
         }
 
@@ -1173,52 +1210,7 @@ namespace CeBianLan
         #region 获取打开串口方法
         public void serportinfo()
         {
-            //serialPort1.Open();
-            /*serialPort1.PortName = "COM9";
-            serialPort1.BaudRate = 19200;
-            serialPort1.Parity = Parity.None;
-            serialPort1.DataBits = 8;
-            serialPort1.StopBits = StopBits.One;
-            serialPort1.Open();
-            byte[] buffer = new byte[] { 0xCC, 0x02, 0x45, 0x00, 0x00, 0xDD, 0xF0, 0x01 };
-            serialPort1.Write(buffer, 0, buffer.Length);*/
-            string[] ports = System.IO.Ports.SerialPort.GetPortNames();
-            foreach (string port in ports)
-            {
-                try
-                {
-                    // 关闭串口
-                    if (serialPort1.IsOpen)
-                    {
-                        serialPort1.Close();
-                    }
-
-                    // 打开串口并配置通信参数
-                    serialPort1.PortName = port;
-                    serialPort1.BaudRate = 19200;
-                    serialPort1.Parity = Parity.None;
-                    serialPort1.DataBits = 8;
-                    serialPort1.StopBits = StopBits.One;
-                    serialPort1.Open();
-
-                    // 发送指令并等待一段时间
-                    byte[] buffer = new byte[] { 0xCC, 0x02, 0x45, 0x00, 0x00, 0xDD, 0xF0, 0x01 };
-                    serialPort1.Write(buffer, 0, buffer.Length);
-                    Thread.Sleep(5000);
-
-                    // 检查串口缓冲区是否有数据可读
-                    if (serialPort1.BytesToRead > 0)
-                    {
-
-                        break;
-                    }
-                    serialPort1.Close();
-                }
-                catch (Exception ex)
-                {
-                    ;// 处理异常
-                }
-            }
+            
 
 
         }
@@ -1231,17 +1223,18 @@ namespace CeBianLan
         {
             try
             {
-                //tabPage5.Enabled = false;
-                //tabPage6.Enabled = false;
-                //tabPage7.Enabled = false;
-                //显示查询信息到textbox框
+                //this.Size = Screen.PrimaryScreen.WorkingArea.Size;
+                int.TryParse(textBox62.Text, out numericValue);
+                textBox62.Text = 30.ToString();
+                //materialTabControl1.TabPages["tabPage5"].Enabled = false;
+                saveinfo();
                 xxxinfo();
                 //显示地址到下拉框
                 addresinfo();
                 //显示折线图
                 chartinfo();
                 //获取串口打开
-                serportinfo();
+                //serportinfo();
                 //xxinfoseripot();
                 // 计算总页数
                 totalPage = (int)Math.Ceiling((double)dataTable.Rows.Count / pageSize);
@@ -2094,12 +2087,6 @@ namespace CeBianLan
         #endregion
         private async void serialPort1_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-
-            
-            
-            /*Thread myThreads = new Thread(new ThreadStart(cc));
-            // 启动线程
-            myThreads.Start();*/
             try
             {
                 if (textBox20.Text!="" && pictureBox1.Image==null)
@@ -2132,7 +2119,7 @@ namespace CeBianLan
                     {
                         
                         blenderoder2();
-                        await Task.Delay((int)selectedValues+5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2163,7 +2150,7 @@ namespace CeBianLan
                     || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder3();
-                        await Task.Delay((int)selectedValues+5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2195,7 +2182,7 @@ namespace CeBianLan
                     || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder4();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2226,7 +2213,7 @@ namespace CeBianLan
                     || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder5();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2255,7 +2242,7 @@ namespace CeBianLan
                     || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder6();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2284,7 +2271,7 @@ namespace CeBianLan
                      || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder7();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2313,7 +2300,7 @@ namespace CeBianLan
                      || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder8();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2342,7 +2329,7 @@ namespace CeBianLan
                      || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder9();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2369,7 +2356,7 @@ namespace CeBianLan
                      || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder10();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2397,7 +2384,7 @@ namespace CeBianLan
                      || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder11();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2425,7 +2412,7 @@ namespace CeBianLan
                     || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder12();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2453,7 +2440,7 @@ namespace CeBianLan
                     || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder13();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2480,7 +2467,7 @@ namespace CeBianLan
                     || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder14();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2507,7 +2494,7 @@ namespace CeBianLan
                     || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder15();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         myThread.Abort();
                         starttest();
@@ -2535,7 +2522,7 @@ namespace CeBianLan
                     || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder16();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2562,7 +2549,7 @@ namespace CeBianLan
                      || textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder17();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2588,7 +2575,7 @@ namespace CeBianLan
                     if (textBox34.Text != "" || textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder18();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2614,7 +2601,7 @@ namespace CeBianLan
                     if (textBox32.Text != "" || textBox30.Text != "")
                     {
                         blenderoder19();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2640,7 +2627,7 @@ namespace CeBianLan
                     if (textBox30.Text != "")
                     {
                         blenderoder20();
-                        await Task.Delay((int)selectedValues + 5000);
+                        await Task.Delay((int)numericValue + 5000);
                         Thread.Sleep(1000);
                         starttest();
                     }
@@ -2680,11 +2667,11 @@ namespace CeBianLan
                 pictureBox11.Image = null; pictureBox12.Image = null; pictureBox13.Image = null; pictureBox14.Image = null; pictureBox15.Image = null;
                 pictureBox16.Image = null; pictureBox17.Image = null; pictureBox18.Image = null; pictureBox19.Image = null; pictureBox20.Image = null;
 
-                textBox20.Text = string.Empty; textBox23.Text = string.Empty; textBox25.Text = string.Empty; textBox27.Text = string.Empty;
+                /*textBox20.Text = string.Empty; textBox23.Text = string.Empty; textBox25.Text = string.Empty; textBox27.Text = string.Empty;
                 textBox29.Text = string.Empty; textBox21.Text = string.Empty; textBox22.Text = string.Empty; textBox24.Text = string.Empty;
                 textBox26.Text = string.Empty; textBox28.Text = string.Empty; textBox39.Text = string.Empty; textBox37.Text = string.Empty;
                 textBox35.Text = string.Empty; textBox33.Text = string.Empty; textBox31.Text = string.Empty; textBox38.Text = string.Empty;
-                textBox36.Text = string.Empty; textBox34.Text = string.Empty; textBox32.Text = string.Empty; textBox30.Text = string.Empty;
+                textBox36.Text = string.Empty; textBox34.Text = string.Empty; textBox32.Text = string.Empty; textBox30.Text = string.Empty;*/
                 textEndtrue();
                 materialButton1.Enabled = true;
                 materialButton3.Enabled = true;
@@ -3206,7 +3193,7 @@ namespace CeBianLan
                
                 materialTabControl1.SelectTab("tabPage4");
                 blenderoder1();
-                await Task.Delay((int)selectedValues + 5000);
+                await Task.Delay((int)numericValue + 5000);
                 int count = 0; // 用于计数的变量
 
                 string[] textBoxNames = { "textBox20", "textBox23", "textBox25", "textBox27", "textBox29", "textBox21",
@@ -3282,7 +3269,7 @@ namespace CeBianLan
             buffer[6] = 0x5A;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
 
 
             //电机关断
@@ -3374,7 +3361,7 @@ namespace CeBianLan
             buffer[6] = 0x52;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //电机关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -3460,7 +3447,7 @@ namespace CeBianLan
             buffer[6] = 0x54;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //电机关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -3542,7 +3529,7 @@ namespace CeBianLan
             buffer[6] = 0x56;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -3623,7 +3610,7 @@ namespace CeBianLan
             buffer[6] = 0x58;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -3705,7 +3692,7 @@ namespace CeBianLan
             buffer[6] = 0x5A;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -3787,7 +3774,7 @@ namespace CeBianLan
             buffer[6] = 0x5C;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -3869,7 +3856,7 @@ namespace CeBianLan
             buffer[6] = 0x5E;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -3951,7 +3938,7 @@ namespace CeBianLan
             buffer[6] = 0x60;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -4033,7 +4020,7 @@ namespace CeBianLan
             buffer[6] = 0x62    ;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -4127,7 +4114,7 @@ namespace CeBianLan
             buffer[6] = 0x5B;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -4210,7 +4197,7 @@ namespace CeBianLan
             buffer[6] = 0x53;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -4292,7 +4279,7 @@ namespace CeBianLan
             buffer[6] = 0x55;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -4374,7 +4361,7 @@ namespace CeBianLan
             buffer[6] = 0x57;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -4456,7 +4443,7 @@ namespace CeBianLan
             buffer[6] = 0x59;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -4538,7 +4525,7 @@ namespace CeBianLan
             buffer[6] = 0x5B;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -4620,7 +4607,7 @@ namespace CeBianLan
             buffer[6] = 0x5D;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -4702,7 +4689,7 @@ namespace CeBianLan
             buffer[6] = 0x5F;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -4784,7 +4771,7 @@ namespace CeBianLan
             buffer[6] = 0x61;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -4867,7 +4854,7 @@ namespace CeBianLan
             buffer[6] = 0x63;
             buffer[7] = 0x02;
             serialPort1.Write(buffer, 0, 8);
-            await Task.Delay((int)selectedValues);
+            await Task.Delay((int)numericValue);
             //关断
             Byte[] buffer1 = new Byte[8];
             buffer1[0] = 0xCC;
@@ -7900,26 +7887,7 @@ namespace CeBianLan
         {
             try
             {
-                /*listView1.Items[0].Remove();
-                listView1.Items[1].Remove();
-                listView1.Items[2].Remove();
-                listView1.Items[3].Remove();
-                listView1.Items[4].Remove();
-                listView1.Items[5].Remove();
-                listView1.Items[6].Remove();
-                listView1.Items[7].Remove();
-                listView1.Items[8].Remove();
-                listView1.Items[9].Remove();
-                listView1.Items[10].Remove();
-                listView1.Items[11].Remove();
-                listView1.Items[12].Remove();
-                listView1.Items[13].Remove();
-                listView1.Items[14].Remove();
-                listView1.Items[15].Remove();
-                listView1.Items[16].Remove();
-                listView1.Items[17].Remove();
-                listView1.Items[18].Remove();
-                listView1.Items[19].Remove();*/
+               
 
                 int count = 0;
                 foreach (ListViewItem item in listView1.Items)
@@ -8463,6 +8431,7 @@ namespace CeBianLan
         #endregion
         //1电机开
 
+        #region 电机调试
         private void button64_Click(object sender, EventArgs e)
         {
             try
@@ -9429,13 +9398,15 @@ namespace CeBianLan
             
         }
 
+        #endregion
         private void materialTabControl1_SelectedIndexChanged(object sender, EventArgs e)
         {
             
         }
 
-        
 
+        //自检图片绑定
+        #region 自检图片绑定
         private void pictureBox22_MouseEnter(object sender, EventArgs e)
         {
             pictureBox22.Image = Resources.设备自检;
@@ -9495,6 +9466,8 @@ namespace CeBianLan
         {
             pictureBox26.Image = Resources.icon_检测模型_gray;
         }
+
+        #endregion
         private void materialButton11_Click(object sender, EventArgs e)
         {
             DialogResult result = MessageBox.Show("是否导出全部历史测量数据？", "", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -9591,9 +9564,10 @@ namespace CeBianLan
             
         }
 
+        //选项卡输入密码进入
         private void materialTabControl1_Selecting(object sender, TabControlCancelEventArgs e)
         {
-            if (e.TabPageIndex == 4) // 如果是第五个选项卡
+            if (e.TabPageIndex == 3) // 如果是第五个选项卡
             {
                 // 创建一个输入账户密码的对话框
                 InputBox inputBox = new InputBox();
@@ -9611,7 +9585,7 @@ namespace CeBianLan
                     if (IsUserValid(username, password))
                     {
                         // 如果账户密码正确，则启用该TabPage
-                        materialTabControl1.SelectTab("tabPage4");
+                        materialTabControl1.SelectTab("tabPage8");
                     }
                     else
                     {
@@ -9626,11 +9600,50 @@ namespace CeBianLan
                 }
             }
 
-            if (e.TabPageIndex == 5) // 如果是第五个选项卡
+            /*if (e.TabPageIndex == 4) // 如果是第五个选项卡
             {
                 // 创建一个输入账户密码的对话框
                 InputBox inputBox = new InputBox();
                 inputBox.StartPosition = FormStartPosition.CenterScreen;
+                // 显示对话框，并等待用户输入
+                DialogResult result = inputBox.ShowDialog();
+
+                // 如果用户单击了“确定”按钮，则验证输入的账户密码
+                if (result == DialogResult.OK)
+                {
+                    string username = inputBox.Username;
+                    string password = inputBox.Password;
+
+                    // 验证账户密码是否正确
+                    if (IsUserValid(username, password))
+                    {
+                        // 如果账户密码正确，则启用该TabPage
+                        materialTabControl1.SelectTab("tabPage6");
+                    }
+                    else
+                    {
+                        // 如果账户密码不正确，则显示一个错误消息框
+                        MessageBox.Show("请输入正确的账号和密码!");
+                        materialTabControl1.SelectTab("tabPage1");
+                    }
+                }
+                else
+                {
+                    materialTabControl1.SelectTab("tabPage1");
+                }
+            }*/
+
+            /*if (e.TabPageIndex == 6) // 如果是第五个选项卡
+            {
+                MessageBox.Show("抱歉，系统暂未开放此功能,将为您跳转到首页！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                materialTabControl1.SelectTab(0);
+            }*/
+
+            if (e.TabPageIndex == 5) // 如果是第五个选项卡
+            {
+                // 创建一个输入账户密码的对话框
+                InputBox inputBox = new InputBox();
+                inputBox.StartPosition=FormStartPosition.CenterScreen;
                 // 显示对话框，并等待用户输入
                 DialogResult result = inputBox.ShowDialog();
 
@@ -9661,15 +9674,9 @@ namespace CeBianLan
 
             /*if (e.TabPageIndex == 6) // 如果是第五个选项卡
             {
-                MessageBox.Show("抱歉，系统暂未开放此功能,将为您跳转到首页！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                materialTabControl1.SelectTab(0);
-            }*/
-
-            if (e.TabPageIndex == 3) // 如果是第五个选项卡
-            {
                 // 创建一个输入账户密码的对话框
                 InputBox inputBox = new InputBox();
-                inputBox.StartPosition=FormStartPosition.CenterScreen;
+                inputBox.StartPosition = FormStartPosition.CenterScreen;
                 // 显示对话框，并等待用户输入
                 DialogResult result = inputBox.ShowDialog();
 
@@ -9683,7 +9690,7 @@ namespace CeBianLan
                     if (IsUserValid(username, password))
                     {
                         // 如果账户密码正确，则启用该TabPage
-                        materialTabControl1.SelectTab("tabPage8");
+                        materialTabControl1.SelectTab("tabPage7");
                     }
                     else
                     {
@@ -9696,7 +9703,7 @@ namespace CeBianLan
                 {
                     materialTabControl1.SelectTab("tabPage1");
                 }
-            }
+            }*/
         }
 
         //选择搅拌时间
@@ -9742,6 +9749,77 @@ namespace CeBianLan
             
         }
 
+
         
+        public void saveinfo()
+        {
+            textBox20.Text = settings.tb20; textBox21.Text = settings.tb21; textBox22.Text = settings.tb22;
+            textBox23.Text = settings.tb23; textBox24.Text = settings.tb24; textBox25.Text = settings.tb25;
+            textBox26.Text = settings.tb26; textBox27.Text = settings.tb27; textBox28.Text = settings.tb28;
+            textBox29.Text = settings.tb29; textBox30.Text = settings.tb30; textBox31.Text = settings.tb31;
+            textBox32.Text = settings.tb32; textBox33.Text = settings.tb33; textBox34.Text = settings.tb34;
+            textBox35.Text = settings.tb35; textBox36.Text = settings.tb36; textBox37.Text = settings.tb37;
+            textBox38.Text = settings.tb38; textBox39.Text = settings.tb39; 
+        }
+
+        public void FCsave()
+        {
+            settings.tb20 = textBox20.Text; settings.tb21 = textBox21.Text; settings.tb22 = textBox22.Text;
+            settings.tb23 = textBox23.Text; settings.tb24 = textBox24.Text; settings.tb25 = textBox25.Text;
+            settings.tb26 = textBox26.Text; settings.tb27 = textBox27.Text; settings.tb28 = textBox28.Text;
+            settings.tb29 = textBox29.Text; settings.tb30 = textBox30.Text; settings.tb31 = textBox31.Text;
+            settings.tb32 = textBox32.Text; settings.tb33 = textBox33.Text; settings.tb34 = textBox34.Text;
+            settings.tb35 = textBox35.Text; settings.tb36 = textBox36.Text; settings.tb37 = textBox37.Text;
+            settings.tb38 = textBox38.Text; settings.tb39 = textBox39.Text;
+            settings.Save();
+        }
+        //保存上次输入的内容
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            FCsave();
+        }
+
+        private void textBox62_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            // 允许数字、删除键和退格键的输入
+            if (!char.IsDigit(e.KeyChar) && e.KeyChar != '\b' && e.KeyChar != (char)Keys.Delete)
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void textBox62_TextChanged(object sender, EventArgs e)
+        {
+            if (int.TryParse(textBox62.Text, out int value))
+            {
+                if (value>200)
+                {
+                    MessageBox.Show("搅拌时间最大200秒!");
+                    textBox62.Text = "";
+                    //numericValue = 200 * 1000;
+                }
+                else
+                {
+                    numericValue = value * 1000;
+                }
+                
+            }
+        }
+
+        private void Form1_SizeChanged(object sender, EventArgs e)
+        {
+            /*// 计算控件的新位置和大小
+            int controlWidth = (this.ClientSize.Width - 50) / 2;
+            int controlHeight = (this.ClientSize.Height - 100) / 2;
+            int controlLeft = (this.ClientSize.Width - controlWidth) / 2;
+            int controlTop = (this.ClientSize.Height - controlHeight) / 2;
+
+            // 设置控件的位置和大小
+            materialTabControl1.Size = new Size(controlWidth, controlHeight);
+            materialTabControl1.Location = new Point(controlLeft, controlTop);*/
+
+            /*control2.Size = new Size(controlWidth, controlHeight);
+            control2.Location = new Point(controlLeft + controlWidth + 10, controlTop);*/
+        }
     }
 }

@@ -15,10 +15,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
-
-
-
 namespace CeBianLan
 {
     
@@ -541,8 +537,7 @@ namespace CeBianLan
 
         private void Form2_Load(object sender, EventArgs e)
         {
-
-
+            
             /* // 计算总页数
              totalPage = (int)Math.Ceiling((double)dataTable.Rows.Count / pageSize);
 
@@ -600,6 +595,18 @@ namespace CeBianLan
         private void button3_Click_1(object sender, EventArgs e)
         {
             BindData(currentPage + 1);
+        }
+
+        private void textBox5_TextChanged(object sender, EventArgs e)
+        {
+            /*Properties.Settings.Default.textBox5 = textBox5.Text;
+            Properties.Settings.Default.Save();*/
+            
+        }
+
+        private void Form2_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            
         }
     }
 
